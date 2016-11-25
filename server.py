@@ -16,6 +16,8 @@ def make_password():
     pwd = ""
     for size in choice:
         word = random.choice(dict[size])
+        if random.randint(0,1):
+            word = word.upper()
         if pwd:
             pwd += SEPARATOR + word
         else:

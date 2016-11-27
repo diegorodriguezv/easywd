@@ -1,106 +1,82 @@
 #!/usr/bin/python
-from BaseHTTPServer import BaseHTTPRequestHandler,HTTPServer
-import random
+from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
+import easywd
+import argparse
+from urlparse import urlparse, parse_qs
 
-PORT_NUMBER = 80
-PWD_SIZE = 20
-SEPARATOR = "-"
-combinations = []
-dict = {}
 
-def make_password():
-    accum = 0
-    summary = [(size,len(list)) for size,list in dict.iteritems()]
-    chances = [(combi,calc_chances(combi)) for combi in combinations]
-    choice = weighted_choice(chances)
-    pwd = ""
-    for size in choice:
-        word = random.choice(dict[size])
-        if random.randint(0,1):
-            word = word.upper()
-        if pwd:
-            pwd += SEPARATOR + word
-        else:
-            pwd += word
-    return pwd 
-
-def calc_chances(combi):
-    result = 1
-    for size in combi:
-        result *= len(dict[size])
-    return result
-
-def weighted_choice(choices):
-   total = sum(w for c, w in choices)
-   r = random.uniform(0, total)
-   upto = 0
-   for c, w in choices:
-      if upto + w >= r:
-         return c
-      upto += w
-   assert False, "Shouldn't get here"
-
-def find_combinations(partial=[]):
-    sizes = dict.keys()
-    target = PWD_SIZE
-    if partial:
-        s = sum(partial)
-        l = s + len(SEPARATOR) * (len(partial) - 1)
-    else:
-        l = 0
-    if l == target:
-        print "found combi: %s (%s)" % (partial, len(partial))
-        combinations.append(partial)
-    if l >= target:
-        return  # if we reach the number why bother to continue
-    for i in range(len(sizes)):
-        size = sizes[i]
-        find_combinations(partial + [size])
-
-def scrambled(orig):
-    dest = orig[:]
-    random.shuffle(dest)
-    return dest
-
-# load word file into a dict where:
-#   key: length
-#   val: list of words of that length
-def load_dict():
-    word_lengths = {}
-    with open("dict-es.txt") as f:
-        lines = f.readlines()
-    from collections import defaultdict
-    results = defaultdict(list)
-    for line in lines:
-        word = line.strip()
-        wlen = len(word)
-        word_lengths[word] = wlen
-        results[wlen].append(word)
-    return results
-
-#This class will handle any incoming request from
-#the browser
-class myHandler(BaseHTTPRequestHandler):
-    #Handler for the GET requests
+# This class will handle any incoming request from
+# the browser
+class MyHandler(BaseHTTPRequestHandler):
+    # Handler for the GET requests
     def do_GET(self):
-        self.send_response(200)
-        self.send_header('Content-type','text/html')
-        self.end_headers()
-        # Send the html message
-        self.wfile.write(make_password())
+        if urlparse(self.path).path == "/":
+            self.send_response(200)
+            self.send_header("Content-type", "text/html")
+            self.end_headers()
+            args = parse_qs(urlparse(self.path).query)
+            lang = cmd_args.language
+            if "lang" in args:
+                if args["lang"][0] in ["en", "es"]:
+                    lang = args["lang"][0]
+            size = cmd_args.size
+            if "size" in args:
+                try:
+                    if int(args["size"][0]) in range(4, 50 + 1):
+                        size = int(args["size"][0])
+                except ValueError:
+                    pass
+            sep = cmd_args.separator
+            if "sep" in args:
+                sep = args["sep"][0]
+            html = easywd.make_password(lang, size, sep)
+            self.wfile.write(html)
+        else:
+            self.send_response(404)
         return
 
+
+def valid_port(string):
+    msg = "%s is not a valid TCP port, try 1-65535" % string
+    try:
+        value = int(string)
+    except:
+        raise argparse.ArgumentTypeError(msg)
+    if not 1 <= value <= 65535:
+        raise argparse.ArgumentTypeError(msg)
+    return value
+
+
+def valid_size(string):
+    msg = "%s is not a valid size, try 4-50" % string
+    try:
+        value = int(string)
+    except:
+        raise argparse.ArgumentTypeError(msg)
+    if not 4 <= value <= 50:
+        raise argparse.ArgumentTypeError(msg)
+    return value
+
+
+parser = argparse.ArgumentParser(description="Run a minimal web server that generates easywd passwords. "
+                                             "Easy for humans to write in paper, remember, say over the "
+                                             "phone or over the hallway. Cryptographically secure (for "
+                                             "most purposes).")
+parser.add_argument("-p", "--port", help="TCP port, 8080 if omitted", type=valid_port, default=8080)
+parser.add_argument("-s", "--size", help="default password size, 20 if omitted", type=valid_size, default=20)
+parser.add_argument("-l", "--language", help="default language, 'en' if omitted", choices=['en', 'es'], default="en")
+parser.add_argument("-sep", "--separator", help="default word separator, '-' if omitted", default="-")
+cmd_args = parser.parse_args()
+
+port_number = cmd_args.port
 try:
-    #Create a web server and define the handler to manage the
-    #incoming request
-    server = HTTPServer(('', PORT_NUMBER), myHandler)
-    print 'Started httpserver on port ' , PORT_NUMBER
-    #Wait forever for incoming http requests
-    dict = load_dict()
-    find_combinations()
+    # Create a web server and define the handler to manage the
+    # incoming request
+    server = HTTPServer(("", port_number), MyHandler)
+    print "Started HTTP server on port", port_number
+    # Wait forever for incoming http requests
     server.serve_forever()
 
 except KeyboardInterrupt:
-    print '^C received, shutting down the web server'
+    print "^C received, shutting down the web server"
     server.socket.close()
-

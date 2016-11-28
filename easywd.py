@@ -1,6 +1,7 @@
 import random
 import collections
 import functools
+import os
 
 languages = {}
 
@@ -98,7 +99,8 @@ def find_combinations_rec(pwd_size, language, sep_len, combinations=[], partial=
 #   val: tuple of words of that length
 def load_words(language):
     word_lengths = {}
-    with open("dict-{}.txt".format(language)) as f:
+    path = os.path.dirname(os.path.realpath(__file__)) + os.sep
+    with open("{}dict-{}.txt".format(path, language)) as f:
         lines = f.readlines()
     results = {}
     for line in lines:

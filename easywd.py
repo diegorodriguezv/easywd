@@ -5,7 +5,7 @@ import functools
 languages = {}
 
 
-class memoized(object):
+class Memoized(object):
     """Decorator. Caches a function"s return value each time it is called.
     If called later with the same arguments, the cached value is returned
     (not reevaluated).
@@ -38,9 +38,8 @@ class memoized(object):
 
 def make_password(language, pwd_size, sep):
     words_by_size = languages[language]
-    combinations = find_combinations(pwd_size, tuple(words_by_size.keys()), len(sep))
-    chances = [(combination, calc_chances(combination, words_by_size)) for combination in combinations]
-    choice = weighted_choice(chances)
+    combinations = find_combinations(pwd_size, language, len(sep))
+    choice = weighted_choice(combinations)
     pwd = ""
     for size in choice:
         word = random.choice(words_by_size[size])
@@ -51,14 +50,6 @@ def make_password(language, pwd_size, sep):
         else:
             pwd += word
     return pwd
-
-
-# @memoized
-def calc_chances(combination, words_by_size):
-    result = 1
-    for size in combination:
-        result *= len(words_by_size[size])
-    return result
 
 
 def weighted_choice(choices):
@@ -72,29 +63,34 @@ def weighted_choice(choices):
     assert False, "No choices available"
 
 
-@memoized
-def find_combinations(pwd_size, word_sizes, sep_len):
-    result = find_combinations_rec(pwd_size, word_sizes, sep_len)
+@Memoized
+def find_combinations(pwd_size, language, sep_len):
+    result = find_combinations_rec(pwd_size, language, sep_len)
     print "found:", len(result), "combinations"
-    print result
     return result
 
 
-def find_combinations_rec(pwd_size, word_sizes, sep_len, combinations=[], partial=()):
+def find_combinations_rec(pwd_size, language, sep_len, combinations=[], partial=()):
+    words_by_size = languages[language]
+    word_sizes = words_by_size.keys()
     if partial:
         partial_length = sum(partial) + sep_len * (len(partial) - 1)
     else:
         partial_length = 0
         combinations = []
     if partial_length == pwd_size:
-        combinations.append(partial)
+        words_by_size = languages[language]
+        chances = 1
+        for size in partial:
+            chances *= len(words_by_size[size])
+        combinations.append((partial, chances))
         return  # found one
     if partial_length > pwd_size:
         return  # if we reach the number why bother to continue
     possible_sizes = [s for s in word_sizes if s + partial_length <= pwd_size]
     for i in range(len(possible_sizes)):
         size = word_sizes[i]
-        find_combinations_rec(pwd_size, word_sizes, sep_len, combinations, partial + (size,))
+        find_combinations_rec(pwd_size, language, sep_len, combinations, partial + (size,))
     return combinations
 
 
@@ -105,12 +101,15 @@ def load_words(language):
     word_lengths = {}
     with open("dict-{}.txt".format(language)) as f:
         lines = f.readlines()
-    from collections import defaultdict
-    results = defaultdict(tuple)
+    results = {}
     for line in lines:
         word = line.strip()
         wlen = len(word)
         word_lengths[word] = wlen
+        try:
+            results[wlen]
+        except KeyError:
+            results[wlen] = ()
         results[wlen] += (word,)
     return results
 

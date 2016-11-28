@@ -79,7 +79,6 @@ def find_combinations_rec(pwd_size, language, sep_len, combinations=[], partial=
         partial_length = 0
         combinations = []
     if partial_length == pwd_size:
-        words_by_size = languages[language]
         chances = 1
         for size in partial:
             chances *= len(words_by_size[size])

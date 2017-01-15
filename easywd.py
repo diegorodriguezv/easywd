@@ -2,6 +2,7 @@ import random
 import collections
 import functools
 import os
+import logging
 
 languages = {}
 
@@ -67,7 +68,7 @@ def weighted_choice(choices):
 @Memoized
 def find_combinations(pwd_size, language, sep_len):
     result = find_combinations_rec(pwd_size, language, sep_len)
-    print "found:", len(result), "combinations"
+    logging.debug("found:", len(result), "combinations")
     return result
 
 
@@ -117,4 +118,4 @@ def load_words(language):
 
 for lang in ["en", "es"]:
     languages[lang] = load_words(lang)
-    print "loaded", lang, "dictionary"
+    logging.debug("loaded " + lang + " dictionary")

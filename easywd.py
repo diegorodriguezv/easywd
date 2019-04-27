@@ -1,8 +1,10 @@
+#!/usr/bin/env python
 import random
 import collections
 import functools
 import os
 import logging
+import argparse
 
 languages = {}
 
@@ -116,6 +118,41 @@ def load_words(language):
     return results
 
 
-for lang in ["en", "es"]:
-    languages[lang] = load_words(lang)
-    logging.debug("loaded " + lang + " dictionary")
+
+
+def valid_size(string):
+    msg = "%s is not a valid size, try 4-50" % string
+    try:
+        value = int(string)
+    except:
+        raise argparse.ArgumentTypeError(msg)
+    if not 4 <= value <= 50:
+        raise argparse.ArgumentTypeError(msg)
+    return value
+
+
+def parse_args(argv):
+    parser = argparse.ArgumentParser(description="Generates an easywd password. "
+                                                 "Easy for humans to write in paper, remember, say over the "
+                                                 "phone or over the hallway. Cryptographically secure (for "
+                                                 "most purposes).")
+    parser.add_argument("-s", "--size", help="default password size, 20 if omitted", type=valid_size, default=20)
+    parser.add_argument("-l", "--language", help="default language, 'en' if omitted", choices=['en', 'es'],
+                        default="en")
+    parser.add_argument("-sep", "--separator", help="default word separator, '-' if omitted", default="-")
+    return parser.parse_args()
+
+
+def main(argv):
+    for l in ["en", "es"]:
+        languages[l] = load_words(l)
+        logging.debug("loaded " + l + " dictionary")
+    cmd_args = parse_args(argv)
+    lang = cmd_args.language
+    size = cmd_args.size
+    sep = cmd_args.separator
+    print make_password(lang, size, sep)
+
+
+if __name__ == "__main__":
+    main(None)

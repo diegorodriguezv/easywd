@@ -140,7 +140,7 @@ def parse_args(argv):
     parser.add_argument("-l", "--language", help="default language, 'en' if omitted", choices=['en', 'es'],
                         default="en")
     parser.add_argument("-sep", "--separator", help="default word separator, '-' if omitted", default="-")
-    return parser.parse_args()
+    return parser.parse_args(argv)
 
 
 def main(argv):

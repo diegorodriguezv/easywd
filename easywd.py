@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 import random
-import collections
+from collections.abc import Hashable
 import functools
 import os
 import logging
@@ -20,7 +20,7 @@ class Memoized(object):
         self.cache = {}
 
     def __call__(self, *args):
-        if not isinstance(args, collections.Hashable):
+        if not isinstance(args, Hashable):
             # uncacheable. a list, for instance.
             # better to not cache than blow up.
             return self.func(*args)
@@ -76,7 +76,7 @@ def find_combinations(pwd_size, language, sep_len):
 
 def find_combinations_rec(pwd_size, language, sep_len, combinations=[], partial=()):
     words_by_size = languages[language]
-    word_sizes = words_by_size.keys()
+    word_sizes = list(words_by_size.keys())
     if partial:
         partial_length = sum(partial) + sep_len * (len(partial) - 1)
     else:
@@ -151,7 +151,7 @@ def main(argv):
     lang = cmd_args.language
     size = cmd_args.size
     sep = cmd_args.separator
-    print make_password(lang, size, sep)
+    print(make_password(lang, size, sep))
 
 
 if __name__ == "__main__":
